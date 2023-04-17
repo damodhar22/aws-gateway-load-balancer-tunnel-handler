@@ -54,7 +54,7 @@ private:
 
     std::vector<class TunInterface> tunints;
     class UDPPacketReceiver udpRcvr;
-
+    TunInterface ti;
     ghCallback createCallback;
     ghCallback destroyCallback;
     int destroyTimeout;
