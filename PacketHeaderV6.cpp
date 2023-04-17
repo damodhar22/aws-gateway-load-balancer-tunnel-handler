@@ -49,8 +49,8 @@ PacketHeaderV6::PacketHeaderV6(unsigned char *pktbuf, ssize_t pktlen)
             if(pktlen < sizeof(struct ip6_hdr) + sizeof(struct udphdr))
                 throw std::invalid_argument("PacketHeaderV6 provided a packet with protocol=UDP, but too small to carry UDP information.");
             struct udphdr *udp = (struct udphdr *)(pktbuf + sizeof(struct ip6_hdr));
-            srcpt = be16toh(udp->uh_sport);
-            dstpt = be16toh(udp->uh_dport);
+            srcpt = be16toh(udp->source);
+            dstpt = be16toh(udp->dest);
             break;
         }
         case IPPROTO_TCP:
@@ -58,8 +58,8 @@ PacketHeaderV6::PacketHeaderV6(unsigned char *pktbuf, ssize_t pktlen)
             if(pktlen < sizeof(struct ip6_hdr) + sizeof(struct tcphdr))
                 throw std::invalid_argument("PacketHeaderV6 provided a packet with protocol=TCP, but too small to carry UDP information.");
             struct tcphdr *tcp = (struct tcphdr *)(pktbuf + sizeof(struct ip6_hdr));
-            srcpt = be16toh(tcp->th_sport);
-            dstpt = be16toh(tcp->th_dport);
+            srcpt = be16toh(tcp->source);
+            dstpt = be16toh(tcp->dest);
             break;
         }
         default:
