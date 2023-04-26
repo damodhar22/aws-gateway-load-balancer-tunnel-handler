@@ -49,7 +49,7 @@ void newInterfaceCallback(std::string ingressInt, const std::string egressInt, u
  * @param egressInt Old egress interface.
  * @param eniId Old ENI ID.
  */
-void deleteInterfaceCallback(std::string ingressInt, uint64_t eniId)
+void deleteInterfaceCallback(std::string ingressInt, const std::string egressInt, uint64_t eniId)
 {
     if(delCmd.length() > 0)
     {

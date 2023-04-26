@@ -52,7 +52,7 @@ GeneveHandler::GeneveHandler(ghCallback createCallback, ghCallback destroyCallba
         : healthy(true),
           udpRcvr(GENEVE_PORT, std::bind(&GeneveHandler::udpReceiverCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6)),
           ti("gwi-12345", GWLB_MTU, std::bind(&GeneveHandler::tunReceiverCallback, this, 12345, std::placeholders::_1, std::placeholders::_2)),
-          createCallback(std::move(createCallback)), destroyCallback(std::move(destroyCallback)), destroyTimeout(destroyTimeout),
+          createCallback(std::move(createCallback)), destroyCallback(std::move(destroyCallback)), destroyTimeout(destroyTimeout)
 {
 
 }
@@ -65,7 +65,6 @@ GeneveHandler::GeneveHandler(ghCallback createCallback, ghCallback destroyCallba
 std::string GeneveHandler::check()
 {
     std::string ret;
-    std::vector<uint64_t> enisToDelete;
     auto now = std::chrono::steady_clock::now();
     auto cutoff = now - std::chrono::duration<int, std::ratio<1,1>>(destroyTimeout);
     healthy = true;
@@ -78,21 +77,14 @@ std::string GeneveHandler::check()
     // Check their cookie caches as well, and purge stale entries.
     time_t expireTime = time(nullptr) - GWLB_CACHE_EXPIRE;
 
-    ret += ti.second->status();
+    ret += ti.status();
     if(!ti.second->healthCheck()) healthy = false;
 
-    if ((destroyTimeout > 0) && (ti.second->lastPacket.load() < cutoff))
+    if ((destroyTimeout > 0) && (ti.lastPacket.load() < cutoff))
     {
-        std::string delMsg = "The interface pair "s + ti.second->devname " has timed out and are being deleted.\n";
+        std::string delMsg = "The interface pair "s + ti.devname + " has timed out and are being deleted.\n";
         std::cout << currentTime() << ": " << delMsg;
         ret += delMsg;
-        enisToDelete.push_back(ti.first);
-    }
-
-    for (auto &eni : enisToDelete)
-    {
-        // Call the user-provided callback for interfaces being deleted.
-        destroyCallback(ti->devname, eni);
     }
 
     return ret;
@@ -141,7 +133,7 @@ void GeneveHandler::udpReceiverCallback(unsigned char *pkt, ssize_t pktlen, stru
             {
                 // Route the decap'ed packet to our tun interface.
                 if(pktlen > gp.headerLen)
-                    tunIn->writePacket(pkt + gp.headerLen, pktlen - gp.headerLen);
+                    ti.writePacket(pkt + gp.headerLen, pktlen - gp.headerLen);
             } else {
                 if(debug) *debugout << currentTime() << ": GWLB : Got a strange IP protocol version - " << std::to_string(iph->ip_v) << " at offset " << std::to_string(gp.headerLen) << ". Dropping packet." << std::endl;
             }
@@ -158,7 +150,7 @@ void GeneveHandler::udpReceiverCallback(unsigned char *pkt, ssize_t pktlen, stru
 GeneveHandler::~GeneveHandler()
 {
     
-    destroyCallback(ti->devname, ti.first);
+    destroyCallback(ti.devname, ti);
     udpRcvr.shutdown();
     tunnelIn.clear();
     tunnelOut.clear();
